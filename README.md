@@ -1,5 +1,7 @@
 # Floorplan state card for Home Assistant
 
+![floorplan](https://cloud.githubusercontent.com/assets/2073827/25836731/868fed80-34cc-11e7-9f1a-7ec1619d2d2a.png)
+
 ## Background
 
 In the Home Assistant [front end](https://home-assistant.io/docs/frontend/), a [state card](https://home-assistant.io/developers/frontend_add_card/) is displayed for each entity. This works great as it is, but in some cases, you may want a single state card to display multiple entities. One such example is a floorplan of your home, on which you'd like to view all the binary sensors (i.e. zones throughout your home). This project helps you achieve that, thanks to the ability of customizing state cards in Home Assistant.
