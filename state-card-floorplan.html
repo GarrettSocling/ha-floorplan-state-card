@@ -1,0 +1,319 @@
+<!-- This file assumes that the following are already imported by Homeassistant <link rel="import" href="../../bower_components/polymer/polymer.html"> -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://momentjs.com/downloads/moment.js"></script>
+
+<dom-module id="state-card-floorplan">
+
+  <template>
+    <iron-ajax url="/responds_to_get_with_json"></iron-ajax>
+
+    <style>
+      .container {
+        position: relative;
+      }
+    </style>
+
+    <div class='container'>
+      <div id="floorplan" class="svg-container" />
+  </template>
+</dom-module>
+
+<script>
+  Polymer({
+    is: 'state-card-floorplan',
+
+    ready: function () {
+      this.onReady();
+    },
+
+    attached: function () {
+      this.onAttached();
+    },
+
+    detached: function () {
+    },
+
+    properties: {
+      hass: {
+        type: Object,
+      },
+      inDialog: {
+        type: Boolean,
+        value: false,
+      },
+      stateObj: {
+        type: Object,
+      },
+      trackDuration: Number,
+      lastMotionEntityId: String,
+      colorOff: String,
+      colorOn: String,
+      colorOther: String,
+      colors: Array,
+      timeDifference: Number,
+      pendingEntities: Array,
+    },
+
+    onReady() {
+      this.trackDuration = 10000; // 10 seconds
+      this.colorOn = '#F8B9BE';
+      this.colorOff = '#C4EDB1';
+      this.colorOther = '#E0E0E0';
+
+      if (this.stateObj.attributes.track_duration)
+        this.trackDuration = this.stateObj.attributes.track_duration * 1000;
+
+      this.lastMotionEntityId = this.stateObj.attributes.last_motion_entity;
+
+      if (this.stateObj.attributes.color_on)
+        this.colorOn = this.stateObj.attributes.color_on;
+
+      if (this.stateObj.attributes.color_off)
+        this.colorOff = this.stateObj.attributes.color_off;
+
+      if (this.stateObj.attributes.color_other)
+        this.colorOther = this.stateObj.attributes.color_other;
+
+      this.timeDifference = undefined;
+
+      this.colors = [];
+      for (var i = 0; i <= 100; i++) {
+        var ratio = (i / this.trackDuration) * (this.trackDuration / 100);
+        var color = this.rgbToHex(this.mix(this.hexToRgb(this.colorOff), this.hexToRgb(this.colorOn), ratio));
+        this.colors.push(color);
+      }
+    },
+
+    onAttached() {
+      setInterval(this.updateEntities.bind(this), 100);
+
+      var wsUri = ((window.location.protocol === 'https:') ? 'wss:' : 'ws:') + '//' + window.location.host + '/api/websocket';
+      HAWS.createConnection(wsUri, { authToken: this.stateObj.attributes.password }).then(conn => {
+
+        conn.socket.addEventListener('message', event => {
+          var data = JSON.parse(event.data);
+
+          // Store the time difference between the local web browser and the Home Assistant server
+          if (data.event && data.event.time_fired) {
+            var lastEventFiredTime = moment(data.event.time_fired).toDate();
+            this.timeDifference = moment().diff(moment(lastEventFiredTime), 'milliseconds');
+          }
+        });
+
+        HAWS.subscribeEntities(conn, entities => this.handleEntities(entities));
+      }, err => { console.error(err); });
+
+      this.loadFloorPlan();
+    },
+
+    loadFloorPlan() {
+      jQuery.ajax({
+        url: this.stateObj.attributes.floorplan_image,
+        success: function(result) {
+          var svg = Polymer.dom(result).querySelector('svg')
+
+          svg.style.height = '100%';
+          svg.style.width = '100%';
+
+          // Set the default fill color for each shape
+          // Create the title element for each shape (to support tooltips)
+          for (var shape of Polymer.dom(svg).querySelectorAll('rect')) {
+            shape.style.fill = this.colorOther;
+            shape.appendChild(document.createElementNS('', 'title'));
+            shape.setAttribute('title', 'Petar');
+          }
+          for (var shape of Polymer.dom(svg).querySelectorAll('path')) {
+            shape.style.fill = this.colorOther;
+            shape.appendChild(document.createElementNS('', 'title'));
+            shape.setAttribute('title', 'Petar');
+          }
+
+          // Create a new SVG element and copy the contents from the original SVG
+          var newSvg = document.createElementNS('', 'svg');
+          var floorplan = this.$$('#floorplan');
+          floorplan.appendChild(newSvg);
+          newSvg.outerHTML = svg.outerHTML;
+        }.bind(this)
+      });
+    },
+
+    getTargetEntities(entities) {
+      var targetEntities = [];
+
+      var entityIds = this.stateObj.attributes.entities;
+      var entityGroupId = this.stateObj.attributes.entity_group;
+
+      if (entityGroupId) {
+        var groups = HAWS.splitByGroups(entities).groups;
+        var group = groups.find(group => (group.entity_id === entityGroupId));
+        if (group) {
+          for (var entityId of group.attributes.entity_id) {
+            targetEntities.push(entities[entityId]);
+          }
+        }
+      }
+
+      if (entityIds) {
+        for (var entityId of entityIds) {
+          var entity = Object.keys(entities).find(id => id === entityId);
+          if (entity && !targetEntities.find(entity => entity.entity_id === entityId))
+            targetEntities.push(entities[entityId]);
+        }
+      }
+
+      return targetEntities;
+    },
+
+    handleEntities(entities) {
+      var targetEntities = this.getTargetEntities(entities);
+
+      if (!this.pendingEntities) {
+        this.pendingEntities = [];
+        for (var targetEntity of targetEntities) {
+          this.pendingEntities.push({
+            entityId: targetEntity.entity_id,
+            friendlyName: targetEntity.attributes.friendly_name,
+            lastChangedTime: undefined
+          });
+        }
+      }
+
+      var svg = this.$$('#floorplan svg');
+
+      for (var entity of targetEntities) {
+        var shape = Polymer.dom(svg).querySelector('[id="' + entity.entity_id + '"]');
+
+        if (shape) {
+          var title = Polymer.dom(shape).querySelector('title');
+          if (title) {
+            title.innerHTML =  entity.attributes.friendly_name + '\n' +
+              'State: ' + entity.state + '\n' +
+              'Last changed date: ' + moment(entity.last_changed).format('DD-MMM-YYYY') + '\n' +
+              'Last changed time: ' + moment(entity.last_changed).format('HH:mm:ss');;
+          }
+
+          if (entity.state.toLowerCase() === 'on') {
+            shape.style.fill = this.colorOn;
+
+            var pendingEntity = this.pendingEntities.find(x => x.entityId == entity.entity_id);
+            if (pendingEntity) {
+              pendingEntity.lastChangedTime = undefined;
+            }
+          }
+          else {
+            if (this.timeDifference === undefined) {
+              shape.style.fill = this.colorOff;
+            }
+            else {
+              // Determine the current time on the server (based on the local vs. server time difference)
+              var serverMoment = moment();
+              if (this.timeDifference >= 0)
+                serverMoment.subtract(this.timeDifference, 'milliseconds');
+              else
+                serverMoment.add(Math.abs(this.timeDifference), 'milliseconds');
+
+              var lastChangedMoment = moment(entity.last_changed);
+              var elapsed = Math.max(serverMoment.diff(lastChangedMoment, 'milliseconds'), 0);
+              var remaining = this.trackDuration - elapsed;
+
+              if (remaining > 0) {
+                var pendingEntity = this.pendingEntities.find(x => x.entityId == entity.entity_id);
+                if (pendingEntity) {
+                  pendingEntity.lastChangedTime = lastChangedMoment.toDate();
+                }
+              }
+              else {
+                shape.style.fill = this.colorOff;
+              }
+            }
+          }
+        }
+        else {
+          console.error('Could not find SVG shape element for', entity.entity_id);
+        }
+
+        if (this.lastMotionEntityId && (entity.attributes.friendly_name === entities[this.lastMotionEntityId].state)) {
+          shape.style.stroke = 'gray';
+          shape.style.strokeWidth = '2px';
+        }
+        else {
+          shape.style.strokeWidth = '0px';
+        }
+      }
+    },
+
+    updateEntities() {
+      if (!this.pendingEntities)
+        return;
+
+      var entitiesToUpdate = this.pendingEntities.filter(entity => entity.lastChangedTime != undefined);
+
+      if (!entitiesToUpdate.length || (this.timeDifference === undefined))
+        return;
+
+      var serverMoment = moment();
+      if (this.timeDifference >= 0)
+        serverMoment.subtract(this.timeDifference, 'milliseconds');
+      else
+        serverMoment.add(Math.abs(this.timeDifference), 'milliseconds');
+
+      var svg = this.$$('#floorplan svg');
+
+      for (var pendingEntity of entitiesToUpdate) {
+        var shape = Polymer.dom(svg).querySelector('[id="' + pendingEntity.entityId + '"]');
+        if (!shape)
+          continue;
+
+        var elapsed = serverMoment.diff(moment(pendingEntity.lastChangedTime), 'milliseconds');
+        if (elapsed < 0) {
+          shape.style.fill = this.colorsOn;
+        }
+        else {
+          if (elapsed < this.trackDuration) {
+            var colorIndex = Math.floor((elapsed / this.trackDuration) * this.colors.length);
+            var color = this.colors[colorIndex];
+            shape.style.fill = color;
+          }
+          else {
+            pendingEntity.lastChangedTime = undefined;
+            shape.style.fill = this.colorOff;
+          }
+        }
+      }
+    },
+
+    rgbToHex(rgb) {
+      return "#" + ((1 << 24) + (rgb[0] << 16) + (rgb[1] << 8) + rgb[2]).toString(16).slice(1);
+    },
+
+    hexToRgb(hex) {
+      // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+      var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+      hex = hex.replace(shorthandRegex, function (m, r, g, b) {
+        return r + r + g + g + b + b;
+      });
+
+      var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : null;
+    },
+
+    mix(color1, color2, weight) {
+      var p = weight;
+      var w = p * 2 - 1;
+      var w1 = ((w / 1) + 1) / 2;
+      var w2 = 1 - w1;
+      var rgb = [
+        Math.round(color1.r * w1 + color2.r * w2),
+        Math.round(color1.g * w1 + color2.g * w2),
+        Math.round(color1.b * w1 + color2.b * w2)
+      ];
+      return rgb;
+    }
+  });
+
+</script>
