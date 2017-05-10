@@ -1,6 +1,9 @@
+path, rect {
+  vector-effect: non-scaling-stroke !important;
+}
+
 .last-motion {
   stroke: #808080 !important;
   stroke-width: 1px !important;
   stroke-opacity: 1 !important;
-  vector-effect: non-scaling-stroke !important;
 }
