@@ -6,8 +6,6 @@
 <dom-module id="state-card-floorplan">
 
   <template>
-    <iron-ajax url="/responds_to_get_with_json"></iron-ajax>
-
     <style>
       .container {
         position: relative;
@@ -16,7 +14,9 @@
 
     <div class='container'>
       <div id="floorplan" class="svg-container" />
+    </div>
   </template>
+
 </dom-module>
 
 <script>
@@ -45,6 +45,7 @@
       stateObj: {
         type: Object,
       },
+      stylesheet: String,
       trackDuration: Number,
       lastMotionEntityId: String,
       colorOff: String,
@@ -58,6 +59,9 @@
       this.trackDuration = 10000; // 10 seconds
       this.colorOn = '#F8B9BE';
       this.colorOff = '#C4EDB1';
+
+      if (this.stateObj.attributes.stylesheet)
+        this.stylesheet = this.stateObj.attributes.stylesheet;
 
       if (this.stateObj.attributes.track_duration)
         this.trackDuration = this.stateObj.attributes.track_duration * 1000;
@@ -99,7 +103,19 @@
         HAWS.subscribeEntities(conn, entities => this.handleEntities(entities));
       }, err => { console.error(err); });
 
+      this.addExternalCss();
+
       this.loadFloorPlan();
+    },
+
+    addExternalCss() {
+      if (this.stylesheet) {
+        var link = document.createElement('link');
+        link.type = 'text/css';
+        link.rel = 'stylesheet';
+        link.href = this.stylesheet;
+        this.shadowRoot.appendChild(link);
+      }
     },
 
     loadFloorPlan() {
@@ -111,17 +127,14 @@
           svg.style.height = '100%';
           svg.style.width = '100%';
 
-          // Set the default fill color for each shape
+          var entityIds = this.stateObj.attributes.entities;
+
           // Create the title element for each shape (to support tooltips)
-          for (var shape of Polymer.dom(svg).querySelectorAll('rect')) {
-            shape.setAttribute('vector-effect', 'non-scaling-stroke');
-            shape.appendChild(document.createElementNS('', 'title'));
-            shape.setAttribute('title', 'Petar');
-          }
-          for (var shape of Polymer.dom(svg).querySelectorAll('path')) {
-            shape.setAttribute('vector-effect', 'non-scaling-stroke');
-            shape.appendChild(document.createElementNS('', 'title'));
-            shape.setAttribute('title', 'Petar');
+          for (var shape of Polymer.dom(svg).querySelectorAll('rect, path')) {
+            if (entityIds.find(entityId => entityId === shape.id)) {
+              shape.appendChild(document.createElementNS('', 'title'));
+              shape.setAttribute('title', 'Some title');
+            }
           }
 
           // Create a new SVG element and copy the contents from the original SVG
@@ -229,12 +242,14 @@
         }
 
         if (this.lastMotionEntityId && (entity.attributes.friendly_name === entities[this.lastMotionEntityId].state)) {
-          shape.style.stroke = 'gray';
-          shape.style.strokeWidth = '1px';
-          shape.style.strokeOpacity = 1;
+          if (!shape.classList.contains('last-motion')) {
+            shape.classList.add('last-motion');
+          }
         }
         else {
-          shape.style.strokeOpacity = 0;
+          if (shape.classList.contains('last-motion')) {
+            shape.classList.remove('last-motion');
+          }
         }
       }
     },
