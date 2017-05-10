@@ -154,7 +154,7 @@ Each field is described below:
 |stylesheet|optional|The path to the CSS file for styling the floorplan 
 |color_on|optional|The color used to represent the 'on' state|'#F8B9BE'|
 |color_off|optional|The color used to represent the 'off' state||
-|track_duration|optional|The number of seconds to transition from 'on' to 'off' colors|10|
+|track_duration|optional|The number of seconds to transition from 'on' to 'off' colors (if color_off defined)|10|
 |last_motion_entity|optional|The name of the 'last motion' entity (if created above)||
 |entities|required|The list of binary sensors and switches to display on the floorplan||
 
