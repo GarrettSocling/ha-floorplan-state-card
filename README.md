@@ -124,7 +124,6 @@ homeassistant:
       track_duration: 10
       color_on: '#F8B9BE'
       color_off: '#C4EDB1'
-      color_other: '#E0E0E0'
       last_motion_entity: sensor.template_last_motion
       entities:
         - switch.doorbell
@@ -144,7 +143,6 @@ Each field is described below:
 |track_duration|optional|The number of seconds to transition from 'on' to 'off' colors|10|
 |color_on|optional|The color used to represent the 'on' state|'#F8B9BE'|
 |color_off|optional|The color used to represent the 'off' state|'#C4EDB1'|
-|color_other|optional|The color used to represent areas not covered by binary sensors or switches |'#E0E0E0'|
 |last_motion_entity|optional|The name of the 'last motion' entity (if created above)||
 |entities|required|The list of binary sensors and switches to display on the floorplan||
 
