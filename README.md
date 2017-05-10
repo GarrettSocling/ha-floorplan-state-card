@@ -132,9 +132,9 @@ homeassistant:
       floorplan_image: /local/custom_ui/floorplan/floorplan.svg
       password: <password_goes_here>
       stylesheet: /local/custom_ui/floorplan/floorplan.css
-      track_duration: 10
       color_on: '#F8B9BE'
       color_off: '#C4EDB1'
+      track_duration: 10
       last_motion_entity: sensor.template_last_motion
       entities:
         - switch.doorbell
@@ -152,9 +152,9 @@ Each field is described below:
 |floorplan_image|required|The path to the SVG image||
 |password|optional|The Home Assistant password||
 |stylesheet|optional|The path to the CSS file for styling the floorplan 
-|track_duration|optional|The number of seconds to transition from 'on' to 'off' colors|10|
 |color_on|optional|The color used to represent the 'on' state|'#F8B9BE'|
-|color_off|optional|The color used to represent the 'off' state|'#C4EDB1'|
+|color_off|optional|The color used to represent the 'off' state||
+|track_duration|optional|The number of seconds to transition from 'on' to 'off' colors|10|
 |last_motion_entity|optional|The name of the 'last motion' entity (if created above)||
 |entities|required|The list of binary sensors and switches to display on the floorplan||
 
