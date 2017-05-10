@@ -56,7 +56,7 @@ group:
       - binary_sensor.floorplan
 ```
 
-As an optional step, you can create a 'last motion' sensor to keep track of which binary sensor was triggered last. To do so, add the following:
+As an optional step, you can create a 'last motion' entity to keep track of which binary sensor or switch was triggered last. To do so, add the following:
 
 ```
 sensor:
@@ -73,7 +73,7 @@ sensor:
           {% endfor %}
 ```
 
-You can then get this 'last motion' sensor to also display in the `Zones` group:
+You can then get this 'last motion' entity to also display in the `Zones` group:
 
 ```
 group:
@@ -84,15 +84,25 @@ group:
       - binary_sensor.floorplan
 ```
 
+Refer to the next section for information about how to style the apperance of the 'lasy motion' entity.
+
 ### Customize the floorplan state card
 
 The final step is to get Home Assistant to display the floorplan using its own customized state card.
 
-Save the floorplan state card HTML file to the Custom UI directory within Home Assistant:
+Copy the floorplan state card HTML file (included in this repository) to the Custom UI directory within Home Assistant:
 
 ```
 <path_to_home_assistant>/www/custom_ui/state-card-floorplan.html
 ```
+
+You can also copy the floorplan CSS file (included in this repository) to the location shown below. This allows you to apply any styling to the floorplan, SVG elements, etc.
+
+```
+<path_to_home_assistant>/www/custom_ui/floorplan/floorplan.css
+```
+
+The sample CSS file already contains a rule for styling the appearance of the 'last motion' entity (i.e. adds a grey border).
 
 Then add the following customization:
 
@@ -121,6 +131,7 @@ homeassistant:
       custom_ui_state_card: floorplan
       floorplan_image: /local/custom_ui/floorplan/floorplan.svg
       password: <password_goes_here>
+      stylesheet: /local/custom_ui/floorplan/floorplan.css
       track_duration: 10
       color_on: '#F8B9BE'
       color_off: '#C4EDB1'
@@ -140,6 +151,7 @@ Each field is described below:
 |custom_ui_state_card|required|The name of the floorplan state card||
 |floorplan_image|required|The path to the SVG image||
 |password|optional|The Home Assistant password||
+|stylesheet|optional|The path to the CSS file for styling the floorplan 
 |track_duration|optional|The number of seconds to transition from 'on' to 'off' colors|10|
 |color_on|optional|The color used to represent the 'on' state|'#F8B9BE'|
 |color_off|optional|The color used to represent the 'off' state|'#C4EDB1'|
