@@ -13,7 +13,7 @@
     </style>
 
     <div class='container'>
-      <div id="floorplan" class="svg-container" />
+      <div id="floorplan" />
     </div>
   </template>
 
@@ -58,7 +58,7 @@
     onReady() {
       this.trackDuration = 10000; // 10 seconds
       this.colorOn = '#F8B9BE';
-      this.colorOff = '#C4EDB1';
+      this.colorOff = undefined;
 
       if (this.stateObj.attributes.stylesheet)
         this.stylesheet = this.stateObj.attributes.stylesheet;
@@ -77,10 +77,12 @@
       this.timeDifference = undefined;
 
       this.colors = [];
-      for (var i = 0; i <= 100; i++) {
-        var ratio = (i / this.trackDuration) * (this.trackDuration / 100);
-        var color = this.rgbToHex(this.mix(this.hexToRgb(this.colorOff), this.hexToRgb(this.colorOn), ratio));
-        this.colors.push(color);
+      if (this.colorOff) {
+        for (var i = 0; i <= 100; i++) {
+          var ratio = (i / this.trackDuration) * (this.trackDuration / 100);
+          var color = this.rgbToHex(this.mix(this.hexToRgb(this.colorOff), this.hexToRgb(this.colorOn), ratio));
+          this.colors.push(color);
+        }
       }
     },
 
@@ -121,7 +123,7 @@
     loadFloorPlan() {
       jQuery.ajax({
         url: this.stateObj.attributes.floorplan_image,
-        success: function(result) {
+        success: function (result) {
           var svg = Polymer.dom(result).querySelector('svg')
 
           svg.style.height = '100%';
@@ -195,14 +197,14 @@
         if (shape) {
           var title = Polymer.dom(shape).querySelector('title');
           if (title) {
-            title.innerHTML =  entity.attributes.friendly_name + '\n' +
+            title.innerHTML = entity.attributes.friendly_name + '\n' +
               'State: ' + entity.state + '\n' +
               'Last changed date: ' + moment(entity.last_changed).format('DD-MMM-YYYY') + '\n' +
               'Last changed time: ' + moment(entity.last_changed).format('HH:mm:ss');;
           }
 
-          if (entity.state.toLowerCase() === 'on') {
-            shape.style.fill = this.colorOn;
+          if ((entity.state.toLowerCase() === 'on') || (entity.state.toLowerCase() === 'open')) {
+            this.setFill(shape, 1);
 
             var pendingEntity = this.pendingEntities.find(x => x.entityId == entity.entity_id);
             if (pendingEntity) {
@@ -211,7 +213,7 @@
           }
           else {
             if (this.timeDifference === undefined) {
-              shape.style.fill = this.colorOff;
+              this.setFill(shape, 0);
             }
             else {
               // Determine the current time on the server (based on the local vs. server time difference)
@@ -232,7 +234,7 @@
                 }
               }
               else {
-                shape.style.fill = this.colorOff;
+                this.setFill(shape, 0);
               }
             }
           }
@@ -278,18 +280,45 @@
 
         var elapsed = serverMoment.diff(moment(pendingEntity.lastChangedTime), 'milliseconds');
         if (elapsed < 0) {
-          shape.style.fill = this.colorsOn;
+          this.setFill(shape, 1);
         }
         else {
           if (elapsed < this.trackDuration) {
-            var colorIndex = Math.floor((elapsed / this.trackDuration) * this.colors.length);
-            var color = this.colors[colorIndex];
-            shape.style.fill = color;
+            //var colorIndex = Math.floor((elapsed / this.trackDuration) * this.colors.length);
+            //var color = this.colors[colorIndex];
+            //shape.style.fill = color;
+            this.setFill(shape, elapsed / this.trackDuration);
           }
           else {
             pendingEntity.lastChangedTime = undefined;
-            shape.style.fill = this.colorOff;
+            this.setFill(shape, 0);
           }
+        }
+      }
+    },
+
+    setFill(shape, value) {
+      if (this.colorOff) {
+        if (value >= 1) {
+          shape.style.fill = this.colorOn;
+        }
+        else if (value <= 0) {
+          shape.style.fill = this.colorOff;
+        }
+        else {
+          var colorIndex = Math.floor(value * this.colors.length);
+          var color = this.colors[colorIndex];
+          shape.style.fill = color;
+        }
+      }
+      else {
+        if (value >= 1) {
+          shape.style.fill = this.colorOn;
+          shape.style.opacity = 1;
+        }
+        else {
+          shape.style.fill = this.colorOn;
+          shape.style.opacity = 0;
         }
       }
     },
