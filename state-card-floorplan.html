@@ -53,6 +53,7 @@
       colors: Array,
       timeDifference: Number,
       pendingEntities: Array,
+      originalShapeFills: Array,
     },
 
     onReady() {
@@ -131,11 +132,18 @@
 
           var entityIds = this.stateObj.attributes.entities;
 
+          this.originalShapeFills = [];
+
           // Create the title element for each shape (to support tooltips)
           for (var shape of Polymer.dom(svg).querySelectorAll('rect, path')) {
             if (entityIds.find(entityId => entityId === shape.id)) {
               shape.appendChild(document.createElementNS('', 'title'));
               shape.setAttribute('title', 'Some title');
+
+              this.originalShapeFills.push({
+                id: shape.id,
+                fill: shape.style.fill 
+              });
             }
           }
 
@@ -314,11 +322,12 @@
       else {
         if (value >= 1) {
           shape.style.fill = this.colorOn;
-          shape.style.opacity = 1;
         }
         else {
-          shape.style.fill = this.colorOn;
-          shape.style.opacity = 0;
+          var shapeFill = this.originalShapeFills.find(shapeFill => shapeFill.id === shape.id);
+          if (shapeFill) {
+            shape.style.fill = shapeFill.fill;
+          }
         }
       }
     },
