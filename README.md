@@ -10,7 +10,7 @@ With Floorplan state card for Home Assistant, you can:
 
 - Display your floorplan image as a state card
 - Include any number of binary sensors and switches on your floorplan
-- Specify colors for rendereing the 'on' and 'off' states
+- Specify colors for rendering the 'on' and 'off' states
 - Gradually transition from 'on' to 'off' using color gradients
 - Display the last triggered binary sensor
 - Display hover-over text for each binary sensor or switch
