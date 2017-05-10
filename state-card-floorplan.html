@@ -114,10 +114,12 @@
           // Set the default fill color for each shape
           // Create the title element for each shape (to support tooltips)
           for (var shape of Polymer.dom(svg).querySelectorAll('rect')) {
+            shape.setAttribute('vector-effect', 'non-scaling-stroke');
             shape.appendChild(document.createElementNS('', 'title'));
             shape.setAttribute('title', 'Petar');
           }
           for (var shape of Polymer.dom(svg).querySelectorAll('path')) {
+            shape.setAttribute('vector-effect', 'non-scaling-stroke');
             shape.appendChild(document.createElementNS('', 'title'));
             shape.setAttribute('title', 'Petar');
           }
@@ -229,9 +231,10 @@
         if (this.lastMotionEntityId && (entity.attributes.friendly_name === entities[this.lastMotionEntityId].state)) {
           shape.style.stroke = 'gray';
           shape.style.strokeWidth = '2px';
+          shape.style.strokeOpacity = 1;
         }
         else {
-          shape.style.strokeWidth = '0px';
+          shape.style.strokeOpacity = 0;
         }
       }
     },
