@@ -114,7 +114,7 @@
         link.type = 'text/css';
         link.rel = 'stylesheet';
         link.href = this.stylesheet;
-        this.shadowRoot.appendChild(link);
+        Polymer.dom(this.root).appendChild(link);
       }
     },
 
