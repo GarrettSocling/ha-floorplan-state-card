@@ -49,7 +49,6 @@
       lastMotionEntityId: String,
       colorOff: String,
       colorOn: String,
-      colorOther: String,
       colors: Array,
       timeDifference: Number,
       pendingEntities: Array,
@@ -59,7 +58,6 @@
       this.trackDuration = 10000; // 10 seconds
       this.colorOn = '#F8B9BE';
       this.colorOff = '#C4EDB1';
-      this.colorOther = '#E0E0E0';
 
       if (this.stateObj.attributes.track_duration)
         this.trackDuration = this.stateObj.attributes.track_duration * 1000;
@@ -71,9 +69,6 @@
 
       if (this.stateObj.attributes.color_off)
         this.colorOff = this.stateObj.attributes.color_off;
-
-      if (this.stateObj.attributes.color_other)
-        this.colorOther = this.stateObj.attributes.color_other;
 
       this.timeDifference = undefined;
 
@@ -119,12 +114,10 @@
           // Set the default fill color for each shape
           // Create the title element for each shape (to support tooltips)
           for (var shape of Polymer.dom(svg).querySelectorAll('rect')) {
-            shape.style.fill = this.colorOther;
             shape.appendChild(document.createElementNS('', 'title'));
             shape.setAttribute('title', 'Petar');
           }
           for (var shape of Polymer.dom(svg).querySelectorAll('path')) {
-            shape.style.fill = this.colorOther;
             shape.appendChild(document.createElementNS('', 'title'));
             shape.setAttribute('title', 'Petar');
           }
