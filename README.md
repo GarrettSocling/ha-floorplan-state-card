@@ -4,23 +4,23 @@
 
 ## Background
 
-In the Home Assistant [front end](https://home-assistant.io/docs/frontend/), a [state card](https://home-assistant.io/developers/frontend_add_card/) is displayed for each entity. This works great as it is, but in some cases, you may want a single state card to display multiple entities. One such example is a floorplan of your home, on which you'd like to view a range of binary sensors and switches. This project helps you achieve that, thanks to the ability of customizing state cards in Home Assistant.
+In the Home Assistant [front end](https://home-assistant.io/docs/frontend/), a [state card](https://home-assistant.io/developers/frontend_add_card/) is displayed for each entity. This works great as it is, but in some cases, you may want a single state card to display multiple entities. One such example is a floorplan of your home, on which you'd like to view a range of binary sensors, switches, and lights. This project helps you achieve that, thanks to the ability of customizing state cards in Home Assistant.
 
 With Floorplan state card for Home Assistant, you can:
 
 - Display your floorplan image as a state card
-- Include any number of binary sensors and switches on your floorplan
+- Include any number of binary sensors, switches and lights on your floorplan
 - Specify colors for rendering the 'on' and 'off' states
 - Gradually transition from 'on' to 'off' using color gradients
 - Display the last triggered binary sensor
-- Display hover-over text for each binary sensor or switch
+- Display hover-over text for each entity
 
 
 ## Usage
 
 ### Create the floorplan SVG file
 
-To get things up and running, you first need to create an SVG file of your floorplan. [Inkscape](https://inkscape.org/en/develop/about-svg/) is a free application that lets you create vector images. You can make your floorplan as simple or as detailed as you want. The only requirement is that you create a shape (i.e. `rectangle`, `path`, etc.) for each binary sensor or switch you want to display on your floorplan. Each of these shapes needs to have its `id` set to the entity name in Home Assistant.
+To get things up and running, you first need to create an SVG file of your floorplan. [Inkscape](https://inkscape.org/en/develop/about-svg/) is a free application that lets you create vector images. You can make your floorplan as simple or as detailed as you want. The only requirement is that you create a shape (i.e. `rectangle`, `path`, etc.) for each binary sensor, switch, or light you want to display on your floorplan. Each of these shapes needs to have its `id` set to the entity name in Home Assistant.
 
 For example, below is what the shape looks like for a Front Hallway binary sensor. The `id` of the shape is set to the entity name `binary_sensor.front_hallway`. This allows the shape to automatically get hooked up to the right entity when the state card is displayed.
 
@@ -56,7 +56,7 @@ group:
       - binary_sensor.floorplan
 ```
 
-As an optional step, you can create a 'last motion' entity to keep track of which binary sensor or switch was triggered last. To do so, add the following:
+As an optional step, you can create a 'last motion' entity to keep track of which binary sensor was triggered last. To do so, add the following:
 
 ```
 sensor:
