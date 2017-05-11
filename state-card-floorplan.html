@@ -210,7 +210,7 @@
     getTargetEntities(entities) {
       var targetEntityIds = [];
 
-      var entityIds = this.stateObj.attributes.entities;
+      var entityIds = Object.keys(entities);
       var entityGroupId = this.stateObj.attributes.entity_group;
 
       if (entityGroupId) {
