@@ -208,46 +208,26 @@
     },
 
     getTargetEntities(entities) {
-      var targetEntityIds = [];
+      var targetEntities = [];
 
-      var entityIds = Object.keys(entities);
-      var entityGroupId = this.stateObj.attributes.entity_group;
-
-      if (entityGroupId) {
-        var groups = HAWS.splitByGroups(entities).groups;
-        var group = groups.find(group => (group.entity_id === entityGroupId));
-        if (group) {
-          for (var entityId of group.attributes.entity_id) {
-            targetEntityIds.push(entityId);
-          }
-        }
-      }
+      var entityIds = this.stateObj.attributes.entities;
 
       if (entityIds) {
         for (var entityId of entityIds) {
-          if (!targetEntityIds.find(targetEntityId => (targetEntityId === entityId)))
-            targetEntityIds.push(entityId);
-        }
-      }
+          if (Object.keys(entities).find(id => id === entityId)) {
+            var entity = entities[entityId];
+            var domain = entity.entity_id.split('.')[0];
+            var useColorTransition = domain.indexOf('sensor') >= 0;
 
-      var targetEntities = [];
-      for (var targetEntityId of targetEntityIds) {
-        var entity = entities[targetEntityId];
-        if (entity) {
-          var domain = entity.entity_id.split('.')[0];
-          var useColorTransition = domain.indexOf('sensor') >= 0;
-
-          targetEntities.push({
-            entityId: entity.entity_id,
-            domain: domain,
-            friendlyName: entity.attributes.friendly_name,
-            lastChangedTime: undefined,
-            useColorTransition: useColorTransition,
-            trackDuration: useColorTransition ? this.trackDuration : undefined,
-          });
-        }
-        else {
-          console.error('Cannot find state object for entity: ', targetEntityId);
+            targetEntities.push({
+              entityId: entity.entity_id,
+              domain: domain,
+              friendlyName: entity.attributes.friendly_name,
+              lastChangedTime: undefined,
+              useColorTransition: useColorTransition,
+              trackDuration: useColorTransition ? this.trackDuration : undefined,
+            });
+          }
         }
       }
 
