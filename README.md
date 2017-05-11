@@ -156,6 +156,6 @@ Each field is described below:
 |color_off|optional|The color used to represent the 'off' state||
 |track_duration|optional|The number of seconds to transition from 'on' to 'off' colors (if color_off defined)|10|
 |last_motion_entity|optional|The name of the 'last motion' entity (if created above)||
-|entities|required|The list of binary sensors and switches to display on the floorplan||
+|entities|required|The list of binary sensors, switches, and lights to display on the floorplan||
 
 After restarting Home Assistant, you should be able to see your floorplan state card in action.
