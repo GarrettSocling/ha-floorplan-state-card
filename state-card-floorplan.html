@@ -66,6 +66,7 @@
       },
       colors: {
         type: Array,
+        value: [],
       },
       timeDifference: {
         type: Number,
@@ -73,10 +74,12 @@
       },
       targetEntities: {
         type: Array,
+        value: [],
       },
-      originalShapeFills: {
+      shapeInfos: {
         type: Array,
-      }
+        value: [],
+      },
     },
 
     stopPropagation(e) {
@@ -98,7 +101,6 @@
       if (this.stateObj.attributes.color_off)
         this.colorOff = this.stateObj.attributes.color_off;
 
-      this.colors = [];
       if (this.colorOff) {
         for (var i = 0; i <= 100; i++) {
           var ratio = (i / this.trackDuration) * (this.trackDuration / 100);
@@ -153,19 +155,34 @@
 
           var entityIds = this.stateObj.attributes.entities;
 
-          this.originalShapeFills = [];
-
-          // Create the title element for each shape (to support tooltips)
-          for (var shape of Polymer.dom(svg).querySelectorAll('rect, path')) {
+          for (var shape of Polymer.dom(svg).querySelectorAll('rect, circle, ellipse, line, polyline, polygon, path')) {
             if (entityIds.find(entityId => entityId === shape.id)) {
-              shape.appendChild(document.createElementNS('', 'title'));
-              shape.setAttribute('title', 'Some title');
-
-              this.originalShapeFills.push({
-                id: shape.id,
-                fill: shape.style.fill
+              this.shapeInfos.push({
+                shapeId: shape.id,
+                shape: shape,
+                clonedShape: shape.cloneNode(true),
+                entityId: shape.id
               });
             }
+          }
+
+          for (var group of Polymer.dom(svg).querySelectorAll('g')) {
+            if (entityIds.find(entityId => entityId === group.id)) {
+              $(group).children('rect, circle, ellipse, line, polyline, polygon, path').each((i, shape) => {
+                this.shapeInfos.push({
+                  shapeId: shape.id,
+                  shape: shape,
+                  clonedShape: shape.cloneNode(true),
+                  entityId: group.id
+                });
+              });
+            }
+          }
+
+          // Create the title element for each shape (to support tooltips)
+          for (var shapeInfo of this.shapeInfos) {
+            shapeInfo.shape.appendChild(document.createElementNS('', 'title'));
+            shapeInfo.shape.setAttribute('title', 'Some title');
           }
 
           // Create a new SVG element and copy the contents from the original SVG
@@ -176,15 +193,25 @@
 
           $(Polymer.dom(this.root).querySelectorAll('svg')).css('cursor', 'default');
 
-          for (var shape of Polymer.dom(this.root).querySelectorAll('path, rect')) {
-            if (entityIds.find(entityId => entityId === shape.id)) {
+          for (var shapeInfo of this.shapeInfos) {
+            var shape = Polymer.dom(this.root).querySelector(shapeInfo.shapeId);
+            if (shape) {
+              $(shape).attr('title', 'test');
+              $(shape).on('click', this.onShapeClick.bind(this));
+              $(shape).css('cursor', 'pointer');
+              $(shape).addClass('entity');
+
+            }
+          }
+
+          for (var shape of Polymer.dom(this.root).querySelectorAll('svg *')) {
+            if (this.shapeInfos.find(shapeId => shapeId === shape.id)) {
               $(shape).attr('title', 'test');
               $(shape).on('click', this.onShapeClick.bind(this));
               $(shape).css('cursor', 'pointer');
               $(shape).addClass('entity');
             }
           }
-
         }.bind(this)
       });
     },
@@ -232,7 +259,7 @@
     },
 
     handleEntities(entities) {
-      if (!this.targetEntities) {
+      if (!this.targetEntities || !this.targetEntities.length) {
         this.targetEntities = this.getTargetEntities(entities);
       }
 
@@ -245,9 +272,16 @@
         if (!targetEntity)
           continue;
 
-        var shape = Polymer.dom(svg).querySelector('[id="' + entity.entity_id + '"]');
+        var shapeInfos = [];
+        for (var shapeInfo of this.shapeInfos) {
+          if (shapeInfo.entityId === entity.entity_id) {
+            shapeInfos.push(shapeInfo);
+          }
+        }
 
-        if (shape) {
+        for (var shapeInfo of shapeInfos) {
+          var shape = Polymer.dom(svg).querySelector('[id="' + shapeInfo.shapeId + '"]');
+
           var title = Polymer.dom(shape).querySelector('title');
           if (title) {
             title.innerHTML = entity.attributes.friendly_name + '\n' +
@@ -290,9 +324,9 @@
             }
           }
         }
-        else {
-          console.error('Could not find SVG shape element: ', entity.entity_id);
-        }
+        //        else {
+        //          console.error('Could not find SVG shape element: ', entity.entity_id);
+        //        }
 
         if (this.lastMotionEntityId && (entity.attributes.friendly_name === entities[this.lastMotionEntityId].state)) {
           if (!shape.classList.contains('last-motion')) {
@@ -308,7 +342,7 @@
     },
 
     updateEntities() {
-      if (!this.targetEntities)
+      if (!this.targetEntities || !this.targetEntities.length)
         return;
 
       var entitiesToUpdate = this.targetEntities.filter(entity => entity.lastChangedTime != undefined);
@@ -335,9 +369,6 @@
         }
         else {
           if (elapsed < targetEntity.trackDuration) {
-            //var colorIndex = Math.floor((elapsed / targetEntity.trackDuration) * this.colors.length);
-            //var color = this.colors[colorIndex];
-            //shape.style.fill = color;
             this.setFill(shape, elapsed / targetEntity.trackDuration);
           }
           else {
@@ -350,6 +381,12 @@
 
     onShapeClick(e) {
       var entity = this.targetEntities.find(entity => entity.entityId === e.target.id);
+      if (!entity) {
+        var parent = $(e.target).parent();
+        if (parent.length) {
+          entity = this.targetEntities.find(entity => entity.entityId === parent[0].id);
+        }
+      }
       if (entity) {
         this.fire('hass-more-info', { entityId: entity.entityId });
       }
@@ -374,9 +411,9 @@
           shape.style.fill = this.colorOn;
         }
         else {
-          var shapeFill = this.originalShapeFills.find(shapeFill => shapeFill.id === shape.id);
-          if (shapeFill) {
-            shape.style.fill = shapeFill.fill;
+          var shapeInfo = this.shapeInfos.find(shapeInfo => shapeInfo.shapeId === shape.id);
+          if (shapeInfo) {
+            shape.style.fill = shapeInfo.clonedShape.style.fill;
           }
         }
       }
