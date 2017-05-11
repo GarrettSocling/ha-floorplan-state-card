@@ -233,17 +233,22 @@
       var targetEntities = [];
       for (var targetEntityId of targetEntityIds) {
         var entity = entities[targetEntityId];
-        var domain = entity.entity_id.split('.')[0];
-        var useColorTransition = domain.indexOf('sensor') >= 0;
+        if (entity) {
+          var domain = entity.entity_id.split('.')[0];
+          var useColorTransition = domain.indexOf('sensor') >= 0;
 
-        targetEntities.push({
-          entityId: entity.entity_id,
-          domain: domain,
-          friendlyName: entity.attributes.friendly_name,
-          lastChangedTime: undefined,
-          useColorTransition: useColorTransition,
-          trackDuration: useColorTransition ? this.trackDuration : undefined,
-        });
+          targetEntities.push({
+            entityId: entity.entity_id,
+            domain: domain,
+            friendlyName: entity.attributes.friendly_name,
+            lastChangedTime: undefined,
+            useColorTransition: useColorTransition,
+            trackDuration: useColorTransition ? this.trackDuration : undefined,
+          });
+        }
+        else {
+          console.error('Cannot find state object for entity: ', targetEntityId);
+        }
       }
 
       return targetEntities;
@@ -316,7 +321,7 @@
           }
         }
         //        else {
-        //          console.error('Could not find SVG shape element: ', entity.entity_id);
+        //          console.error('Cannot find SVG shape element: ', entity.entity_id);
         //        }
 
         if (this.lastMotionEntityId && (entity.attributes.friendly_name === entities[this.lastMotionEntityId].state)) {
