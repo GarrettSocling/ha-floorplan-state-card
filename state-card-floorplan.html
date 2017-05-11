@@ -194,18 +194,9 @@
           $(Polymer.dom(this.root).querySelectorAll('svg')).css('cursor', 'default');
 
           for (var shapeInfo of this.shapeInfos) {
-            var shape = Polymer.dom(this.root).querySelector(shapeInfo.shapeId);
-            if (shape) {
-              $(shape).attr('title', 'test');
-              $(shape).on('click', this.onShapeClick.bind(this));
-              $(shape).css('cursor', 'pointer');
-              $(shape).addClass('entity');
+            var shape = $(Polymer.dom(this.root).querySelectorAll('svg [id="' + shapeInfo.shapeId + '"]'))
 
-            }
-          }
-
-          for (var shape of Polymer.dom(this.root).querySelectorAll('svg *')) {
-            if (this.shapeInfos.find(shapeId => shapeId === shape.id)) {
+            if (shape.length) {
               $(shape).attr('title', 'test');
               $(shape).on('click', this.onShapeClick.bind(this));
               $(shape).css('cursor', 'pointer');
