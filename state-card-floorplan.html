@@ -351,7 +351,7 @@
     onShapeClick(e) {
       var entity = this.targetEntities.find(entity => entity.entityId === e.target.id);
       if (entity) {
-        this.hass.callService(entity.domain, 'toggle', { entity_id: entity.entityId });
+        this.fire('hass-more-info', { entityId: entity.entityId });
       }
     },
 
