@@ -319,19 +319,16 @@
               this.setFill(shape, 0);
             }
           }
-        }
-        //        else {
-        //          console.error('Cannot find SVG shape element: ', entity.entity_id);
-        //        }
 
-        if (this.lastMotionEntityId && (entity.attributes.friendly_name === entities[this.lastMotionEntityId].state)) {
-          if (!shape.classList.contains('last-motion')) {
-            shape.classList.add('last-motion');
+          if (this.lastMotionEntityId && (entity.attributes.friendly_name === entities[this.lastMotionEntityId].state)) {
+            if (!shape.classList.contains('last-motion')) {
+              shape.classList.add('last-motion');
+            }
           }
-        }
-        else {
-          if (shape.classList.contains('last-motion')) {
-            shape.classList.remove('last-motion');
+          else {
+            if (shape.classList.contains('last-motion')) {
+              shape.classList.remove('last-motion');
+            }
           }
         }
       }
