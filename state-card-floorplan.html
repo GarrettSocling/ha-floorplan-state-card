@@ -4,7 +4,7 @@
 <script src="https://momentjs.com/downloads/moment.js"></script>
 
 <dom-module id="state-card-floorplan">
-  <!--dom-module id="ha-panel-floorplan"-->
+<!--dom-module id="ha-panel-floorplan"-->
 
   <template>
     <style>
@@ -51,7 +51,7 @@
       },
       trackDuration: {
         type: Number,
-        value: 10000, // 10 seconds
+        value: undefined
       },
       lastMotionEntityId: {
         type: String,
@@ -109,7 +109,7 @@
       if (this.config.color_off)
         this.colorOff = this.config.color_off;
 
-      if (this.colorOff) {
+      if (this.trackDuration && this.colorOff) {
         for (var i = 0; i <= 100; i++) {
           var ratio = (i / this.trackDuration) * (this.trackDuration / 100);
           var color = this.rgbToHex(this.mix(this.hexToRgb(this.colorOff), this.hexToRgb(this.colorOn), ratio));
@@ -231,7 +231,7 @@
             friendlyName: entity.attributes.friendly_name,
             lastChangedTime: undefined,
             useColors: isSensor || isSwitch,
-            useTransition: isSensor,
+            useTransition: isSensor && this.trackDuration,
             trackDuration: this.trackDuration
           });
         }
