@@ -4,6 +4,7 @@
 <script src="https://momentjs.com/downloads/moment.js"></script>
 
 <dom-module id="state-card-floorplan">
+<!--dom-module id="ha-panel-floorplan"-->
 
   <template>
     <style>
@@ -22,9 +23,9 @@
 <script>
   Polymer({
     is: 'state-card-floorplan',
+    //is: 'ha-panel-floorplan',
 
     ready() {
-      this.onReady();
     },
 
     attached() {
@@ -80,6 +81,10 @@
         type: Array,
         value: [],
       },
+      config: {
+        type: Object,
+        value: undefined,
+      },
     },
 
     stopPropagation(e) {
@@ -87,19 +92,25 @@
     },
 
     onReady() {
-      if (this.stateObj.attributes.stylesheet)
-        this.stylesheet = this.stateObj.attributes.stylesheet;
+    },
 
-      if (this.stateObj.attributes.track_duration)
-        this.trackDuration = this.stateObj.attributes.track_duration * 1000;
+    onAttached() {
+      // Get the config from either the custom state card, or the custom panel
+      this.config = this.stateObj ? this.stateObj.attributes : this.hass.config.panels[this.hass.currentPanel].config;
 
-      this.lastMotionEntityId = this.stateObj.attributes.last_motion_entity;
+      if (this.config.stylesheet)
+        this.stylesheet = this.config.stylesheet;
 
-      if (this.stateObj.attributes.color_on)
-        this.colorOn = this.stateObj.attributes.color_on;
+      if (this.config.track_duration)
+        this.trackDuration = this.config.track_duration * 1000;
 
-      if (this.stateObj.attributes.color_off)
-        this.colorOff = this.stateObj.attributes.color_off;
+      this.lastMotionEntityId = this.config.last_motion_entity;
+
+      if (this.config.color_on)
+        this.colorOn = this.config.color_on;
+
+      if (this.config.color_off)
+        this.colorOff = this.config.color_off;
 
       if (this.colorOff) {
         for (var i = 0; i <= 100; i++) {
@@ -108,13 +119,11 @@
           this.colors.push(color);
         }
       }
-    },
 
-    onAttached() {
       setInterval(this.updateEntities.bind(this), 100);
 
       var wsUri = ((window.location.protocol === 'https:') ? 'wss:' : 'ws:') + '//' + window.location.host + '/api/websocket';
-      HAWS.createConnection(wsUri, { authToken: this.stateObj.attributes.password }).then(conn => {
+      HAWS.createConnection(wsUri, { authToken: this.config.password }).then(conn => {
 
         conn.socket.addEventListener('message', event => {
           var data = JSON.parse(event.data);
@@ -134,6 +143,10 @@
       this.loadFloorPlan();
     },
 
+    getConfig() {
+
+    },
+
     addExternalCss() {
       if (this.stylesheet) {
         var link = document.createElement('link');
@@ -146,14 +159,14 @@
 
     loadFloorPlan() {
       jQuery.ajax({
-        url: this.stateObj.attributes.floorplan_image,
+        url: this.config.floorplan_image,
         success: function (result) {
           var svg = Polymer.dom(result).querySelector('svg')
 
           svg.style.height = '100%';
           svg.style.width = '100%';
 
-          var entityIds = this.stateObj.attributes.entities;
+          var entityIds = this.config.entities;
 
           for (var shape of Polymer.dom(svg).querySelectorAll('rect, circle, ellipse, line, polyline, polygon, path')) {
             if (entityIds.find(entityId => entityId === shape.id)) {
@@ -210,7 +223,7 @@
     getTargetEntities(entities) {
       var targetEntities = [];
 
-      var entityIds = this.stateObj.attributes.entities;
+      var entityIds = this.config.entities;
 
       if (entityIds) {
         for (var entityId of entityIds) {
@@ -229,6 +242,48 @@
             });
           }
         }
+      }
+
+      return targetEntities;
+    },
+
+    getTargetEntitiesOLD(entities) {
+      var targetEntityIds = [];
+
+      var entityIds = Object.keys(entities);
+      var entityGroupId = this.config.entity_group;
+
+      if (entityGroupId) {
+        var groups = HAWS.splitByGroups(entities).groups;
+        var group = groups.find(group => (group.entity_id === entityGroupId));
+        if (group) {
+          for (var entityId of group.attributes.entity_id) {
+            targetEntityIds.push(entityId);
+          }
+        }
+      }
+
+      if (entityIds) {
+        for (var entityId of entityIds) {
+          if (!targetEntityIds.find(targetEntityId => (targetEntityId === entityId)))
+            targetEntityIds.push(entityId);
+        }
+      }
+
+      var targetEntities = [];
+      for (var targetEntityId of targetEntityIds) {
+        var entity = entities[targetEntityId];
+        var domain = entity.entity_id.split('.')[0];
+        var useColorTransition = domain.indexOf('sensor') >= 0;
+
+        targetEntities.push({
+          entityId: entity.entity_id,
+          domain: domain,
+          friendlyName: entity.attributes.friendly_name,
+          lastChangedTime: undefined,
+          useColorTransition: useColorTransition,
+          trackDuration: useColorTransition ? this.trackDuration : undefined,
+        });
       }
 
       return targetEntities;
