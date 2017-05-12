@@ -4,7 +4,7 @@
 <script src="https://momentjs.com/downloads/moment.js"></script>
 
 <dom-module id="state-card-floorplan">
-<!--dom-module id="ha-panel-floorplan"-->
+  <!--dom-module id="ha-panel-floorplan"-->
 
   <template>
     <style>
@@ -91,9 +91,6 @@
       e.stopPropagation();
     },
 
-    onReady() {
-    },
-
     onAttached() {
       // Get the config from either the custom state card, or the custom panel
       this.config = this.stateObj ? this.stateObj.attributes : this.hass.config.panels[this.hass.currentPanel].config;
@@ -143,10 +140,6 @@
       this.loadFloorPlan();
     },
 
-    getConfig() {
-
-    },
-
     addExternalCss() {
       if (this.stylesheet) {
         var link = document.createElement('link');
@@ -181,7 +174,7 @@
 
           for (var group of Polymer.dom(svg).querySelectorAll('g')) {
             if (entityIds.find(entityId => entityId === group.id)) {
-              $(group).children('rect, circle, ellipse, line, polyline, polygon, path').each((i, shape) => {
+              $(group).find('rect, circle, ellipse, line, polyline, polygon, path').each((i, shape) => {
                 this.shapeInfos.push({
                   shapeId: shape.id,
                   shape: shape,
@@ -227,63 +220,21 @@
 
       if (entityIds) {
         for (var entityId of entityIds) {
-          if (Object.keys(entities).find(id => id === entityId)) {
-            var entity = entities[entityId];
-            var domain = entity.entity_id.split('.')[0];
-            var useColorTransition = domain.indexOf('sensor') >= 0;
+          var entity = entities[entityId];
+          var domain = entity.entity_id.split('.')[0];
+          var isSensor = (domain.indexOf('sensor') >= 0);
+          var isSwitch = (domain.indexOf('switch') >= 0);
 
-            targetEntities.push({
-              entityId: entity.entity_id,
-              domain: domain,
-              friendlyName: entity.attributes.friendly_name,
-              lastChangedTime: undefined,
-              useColorTransition: useColorTransition,
-              trackDuration: useColorTransition ? this.trackDuration : undefined,
-            });
-          }
+          targetEntities.push({
+            entityId: entity.entity_id,
+            domain: domain,
+            friendlyName: entity.attributes.friendly_name,
+            lastChangedTime: undefined,
+            useColors: isSensor || isSwitch,
+            useTransition: isSensor,
+            trackDuration: this.trackDuration
+          });
         }
-      }
-
-      return targetEntities;
-    },
-
-    getTargetEntitiesOLD(entities) {
-      var targetEntityIds = [];
-
-      var entityIds = Object.keys(entities);
-      var entityGroupId = this.config.entity_group;
-
-      if (entityGroupId) {
-        var groups = HAWS.splitByGroups(entities).groups;
-        var group = groups.find(group => (group.entity_id === entityGroupId));
-        if (group) {
-          for (var entityId of group.attributes.entity_id) {
-            targetEntityIds.push(entityId);
-          }
-        }
-      }
-
-      if (entityIds) {
-        for (var entityId of entityIds) {
-          if (!targetEntityIds.find(targetEntityId => (targetEntityId === entityId)))
-            targetEntityIds.push(entityId);
-        }
-      }
-
-      var targetEntities = [];
-      for (var targetEntityId of targetEntityIds) {
-        var entity = entities[targetEntityId];
-        var domain = entity.entity_id.split('.')[0];
-        var useColorTransition = domain.indexOf('sensor') >= 0;
-
-        targetEntities.push({
-          entityId: entity.entity_id,
-          domain: domain,
-          friendlyName: entity.attributes.friendly_name,
-          lastChangedTime: undefined,
-          useColorTransition: useColorTransition,
-          trackDuration: useColorTransition ? this.trackDuration : undefined,
-        });
       }
 
       return targetEntities;
@@ -321,37 +272,39 @@
               'Last changed time: ' + moment(entity.last_changed).format('HH:mm:ss');;
           }
 
-          if ((entity.state.toLowerCase() === 'on') || (entity.state.toLowerCase() === 'open')) {
-            this.setFill(shape, 1);
-            targetEntity.lastChangedTime = undefined;
-          }
-          else {
-            if (targetEntity.useColorTransition) {
+          if (targetEntity.useColors) {
+            if ((entity.state.toLowerCase() === 'on') || (entity.state.toLowerCase() === 'open')) {
+              this.setFill(shape, 1);
+              targetEntity.lastChangedTime = undefined;
+            }
+            else {
               if (this.timeDifference === undefined) {
                 this.setFill(shape, 0);
               }
               else {
-                // Determine the current time on the server (based on the local vs. server time difference)
-                var serverMoment = moment();
-                if (this.timeDifference >= 0)
-                  serverMoment.subtract(this.timeDifference, 'milliseconds');
-                else
-                  serverMoment.add(Math.abs(this.timeDifference), 'milliseconds');
+                if (targetEntity.useTransition) {
+                  // Determine the current time on the server (based on the local vs. server time difference)
+                  var serverMoment = moment();
+                  if (this.timeDifference >= 0)
+                    serverMoment.subtract(this.timeDifference, 'milliseconds');
+                  else
+                    serverMoment.add(Math.abs(this.timeDifference), 'milliseconds');
 
-                var lastChangedMoment = moment(entity.last_changed);
-                var elapsed = Math.max(serverMoment.diff(lastChangedMoment, 'milliseconds'), 0);
-                var remaining = targetEntity.trackDuration - elapsed;
+                  var lastChangedMoment = moment(entity.last_changed);
+                  var elapsed = Math.max(serverMoment.diff(lastChangedMoment, 'milliseconds'), 0);
+                  var remaining = targetEntity.trackDuration - elapsed;
 
-                if (remaining > 0) {
-                  targetEntity.lastChangedTime = lastChangedMoment.toDate();
+                  if (remaining > 0) {
+                    targetEntity.lastChangedTime = lastChangedMoment.toDate();
+                  }
+                  else {
+                    this.setFill(shape, 0);
+                  }
                 }
                 else {
                   this.setFill(shape, 0);
                 }
               }
-            }
-            else {
-              this.setFill(shape, 0);
             }
           }
 
@@ -408,15 +361,12 @@
     },
 
     onShapeClick(e) {
-      var entity = this.targetEntities.find(entity => entity.entityId === e.target.id);
-      if (!entity) {
-        var parent = $(e.target).parent();
-        if (parent.length) {
-          entity = this.targetEntities.find(entity => entity.entityId === parent[0].id);
+      var shapeInfo = this.shapeInfos.find(shapeInfo => shapeInfo.shapeId === e.target.id);
+      if (shapeInfo) {
+        entity = this.targetEntities.find(entity => entity.entityId === shapeInfo.entityId);
+        if (entity) {
+          this.fire('hass-more-info', { entityId: entity.entityId });
         }
-      }
-      if (entity) {
-        this.fire('hass-more-info', { entityId: entity.entityId });
       }
     },
 
