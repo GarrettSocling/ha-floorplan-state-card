@@ -152,7 +152,7 @@
 
     loadFloorPlan() {
       jQuery.ajax({
-        url: this.config.floorplan_image,
+        url: this.config.image + '?cacheBuster=' + (new Date().getTime()),
         success: function (result) {
           var svg = Polymer.dom(result).querySelector('svg')
 
