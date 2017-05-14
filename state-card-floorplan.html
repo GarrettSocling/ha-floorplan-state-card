@@ -119,8 +119,10 @@
 
       setInterval(this.updateEntities.bind(this), 100);
 
+      var authToken = (window.localStorage && window.localStorage.authToken) ? window.localStorage.authToken : '';
+      
       var wsUri = ((window.location.protocol === 'https:') ? 'wss:' : 'ws:') + '//' + window.location.host + '/api/websocket';
-      HAWS.createConnection(wsUri, { authToken: this.config.password }).then(conn => {
+      HAWS.createConnection(wsUri, { authToken: authToken }).then(conn => {
 
         conn.socket.addEventListener('message', event => {
           var data = JSON.parse(event.data);
