@@ -1,11 +1,8 @@
 # Floorplan state card for Home Assistant
 
-This version is now deprecated. The new version is available here:
+This version is now deprecated. The new version is available here: https://github.com/pkozul/ha-floorplan
 
-https://github.com/pkozul/ha-floorplan
-
-
-
+The new version has more features and is is much more flexible.
 
 ![floorplan](https://cloud.githubusercontent.com/assets/2073827/25836731/868fed80-34cc-11e7-9f1a-7ec1619d2d2a.png)
 
