@@ -4,6 +4,9 @@ This version is now deprecated. The new version is available here:
 
 https://github.com/pkozul/ha-floorplan
 
+
+
+
 ![floorplan](https://cloud.githubusercontent.com/assets/2073827/25836731/868fed80-34cc-11e7-9f1a-7ec1619d2d2a.png)
 
 ## Background
